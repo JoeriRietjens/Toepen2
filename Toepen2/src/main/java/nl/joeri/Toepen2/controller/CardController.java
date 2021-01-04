@@ -1,5 +1,6 @@
 package nl.joeri.Toepen2.controller;
 
+import com.google.gson.Gson;
 import nl.joeri.Toepen2.model.Card;
 import nl.joeri.Toepen2.model.ChatMessage;
 import nl.joeri.Toepen2.model.Game;
@@ -10,6 +11,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.util.HtmlUtils;
@@ -21,7 +23,9 @@ import java.util.List;
 public class CardController {
 
     @Autowired
-    private SimpMessagingTemplate websocket;
+    private SimpMessagingTemplate simpMessagingTemplate;
+
+    private Gson gson = new Gson();
 
     //Setup some mock data for developing purposes.
     private Player player1 = new Player("John","admin", 1);
@@ -55,6 +59,12 @@ public class CardController {
     }
 
     @MessageMapping("/get.cards")
+    @SendToUser("/queue/cards")
+    public String sendCards()
+    {
+        return gson.toJson(player1.getHand());
+    }
+
     @SendTo("/topic/public")
     public List<Card> testMessage(@Payload final Player player){
         if (player.getNumber() == 1)
@@ -72,11 +82,13 @@ public class CardController {
 
     @MessageMapping("/message.newUser")
     @SendTo("/topic/public")
-    public ChatMessage newUser(@Payload final ChatMessage message,
-                               SimpMessageHeaderAccessor headerAccessor){
-        headerAccessor.getSessionAttributes().put("username", message.getSender());
+    public ChatMessage newUser(@Payload final ChatMessage message){
         return message;
     }
+
+    @MessageMapping("/message.newUser")
+    @SendToUser("/topic/public")
+    
 
 
 }
